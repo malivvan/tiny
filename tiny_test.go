@@ -4,6 +4,12 @@ import (
 	"time"
 )
 
+
+var testModes = map[string]Mode{
+	"mem": ModeMem,
+	"disk": ModeDisk,
+}
+
 type TestStruct struct {
 	String string
 	Int    int

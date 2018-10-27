@@ -6,6 +6,7 @@ import (
 )
 
 type DB struct {
+	path string
 	db    *bolt.DB
 }
 
@@ -28,8 +29,13 @@ func Open(path string) (*DB, error) {
 		return nil, err
 	}
 	return &DB{
+		path: path,
 		db: db,
 	}, nil
+}
+
+func (db *DB) Path() string {
+	return db.path
 }
 
 func (db *DB) Close() error {

@@ -21,6 +21,5 @@ type Mode int
 
 const (
 	ModeDisk = iota
-	ModeLazy
 	ModeMem
 )

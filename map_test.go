@@ -6,6 +6,37 @@ import (
 	"reflect"
 )
 
+func TestMap_SetGet(t *testing.T) {
+	db, err := Open("test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		db.Close()
+		os.Remove("test.db")
+	}()
+	for name, mode := range testModes {
+		t.Run(name, func(t *testing.T) {
+			m, err := db.Store().OpenMap("map", mode, "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			v := "value"
+			err = m.Put("key", &v)
+			if err != nil {
+				t.Fatal(err)
+			}
+			value, err := m.Get("key")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if *value.(*string) != "value" {
+				t.Fail()
+			}
+		})
+	}
+}
+
 func TestMapBasic(t *testing.T) {
 	db, err := Open("test.db")
 	if err != nil {
@@ -22,13 +53,13 @@ func TestMapBasic(t *testing.T) {
 
 	// insert struct pointer, check if get returns the same address
 	ts := newTestStruct()
-	err = m.Set("key", ts)
+	err = m.Put("key", ts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ts2 := m.Get("key")
-	if ts2 == nil {
-		t.Fatal()
+	ts2, err := m.Get("key")
+	if err != nil  {
+		t.Fatal(err)
 	}
 	if ts != ts2 {
 		t.Fail()
@@ -44,9 +75,9 @@ func TestMapBasic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ts3 := m.Get("key")
-	if ts3 == nil {
-		t.Fatal()
+	ts3, err := m.Get("key")
+	if err != nil {
+		t.Fatal(err)
 	}
 	if ts2 == ts3 {
 		t.Fatal("fail")
@@ -56,12 +87,12 @@ func TestMapBasic(t *testing.T) {
 	}
 
 	// remove key and check if it stays gone after database reload
-	err = m.Set("key", nil)
+	err = m.Remove("key")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if m.Get("key") != nil {
-		t.Fatal("expected nil value")
+	if  _, err := m.Get("key"); err.Error() != "key 'key' does not exist" {
+		t.Fatal("expected not exist error")
 	}
 	db.Close()
 	db, err = Open("test.db")
@@ -72,8 +103,8 @@ func TestMapBasic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if m.Get("key") != nil {
-		t.Fatal("expected nil value")
+	if  _, err := m.Get("key"); err.Error() != "key 'key' does not exist" {
+		t.Fatal("expected not exist error")
 	}
 
 	// open submap in disk mode, insert teststruct, read twice and check for different pointers (because of disk mode)
@@ -82,17 +113,17 @@ func TestMapBasic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = m2.Set("submapkey", ts)
+	err = m2.Put("submapkey", ts)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ts4 := m2.Get("submapkey")
-	if ts4 == nil {
-		t.Fatal()
+	ts4, err := m2.Get("submapkey")
+	if err != nil {
+		t.Fatal(err)
 	}
-	ts5 := m2.Get("submapkey")
-	if ts5 == nil {
-		t.Fatal()
+	ts5, err := m2.Get("submapkey")
+	if err != nil {
+		t.Fatal(err)
 	}
 	if ts4 == ts5 {
 		t.Fatal("ts4 should have a different address than ts5")
